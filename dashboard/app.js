@@ -77,7 +77,7 @@
     if (params.get('q')) state.q = params.get('q');
     if (params.get('category')) state.category = params.get('category');
     if (params.get('chain')) state.chain = params.get('chain');
-    if (params.get('p')) state.selected = params.get('p');
+    if (params.get('p')) { state.selected = params.get('p'); state._fromHash = true; }
     if (params.get('tab')) state.tab = params.get('tab');
     if (params.get('sort')) state.sort = params.get('sort');
   }
@@ -214,7 +214,7 @@
       el('i', { class: 'm3', style: 'height:' + Math.max(3, Math.round(18 * Math.log(1 + r.m3_composite) / Math.log(1 + MAXM.m3))) + 'px' })
     ]);
   }
-  function openDetail(slug) { state.selected = slug; writeHash(); render(); var d = document.getElementById('detail'); if (d) d.scrollIntoView({ block: 'start' }); }
+  function openDetail(slug) { state.selected = slug; state._fromHash = false; writeHash(); render(); var d = document.getElementById('detail'); if (d) d.scrollIntoView(); }
   function closeDetail() { state.selected = null; writeHash(); render(); }
   function boardTable() {
     var list = sortedRows(baseRows());
@@ -251,12 +251,12 @@
     });
     return el('div', { class: 'panel' }, el('div', { class: 'table-wrap' }, el('table', null, [
       el('thead', null, el('tr', null, [
-        sortHeader('value', labActive() ? 'Lab value' : 'Implied value'),
+        el('th', { scope: 'col' }, '#'),
         sortHeader('name', 'Protocol'),
         sortHeader('tvl', 'TVL'),
         sortHeader('growth', '7d'),
         el('th', { scope: 'col', class: 'hide-m' }, 'Age, no token'),
-        sortHeader('value', ' '),
+        sortHeader('value', labActive() ? 'Lab value' : 'Implied value'),
         el('th', { scope: 'col', class: 'hide-m' }, 'Signals M1 M2 M3')
       ])),
       tbody
@@ -391,9 +391,14 @@
   function render() {
     root.setAttribute('aria-busy', 'false');
     root.textContent = '';
+    // A deep-linked detail (#p=slug) renders first, so a capture of the page shows the
+    // protocol, not the board's top; a clicked row keeps the detail above the table.
+    var detailFirst = state.tab === 'pre-token' && state.selected && state._fromHash;
     var wrap = el('div', { class: 'wrap' }, [
-      header(), lede(), modelCards(), controls(),
-      state.tab === 'pre-token' ? detailPanel() : null,
+      header(),
+      detailFirst ? detailPanel() : null,
+      lede(), modelCards(), controls(),
+      !detailFirst && state.tab === 'pre-token' ? detailPanel() : null,
       state.tab === 'pre-token' ? boardTable() : liveTable(),
       lab(), compsAndMethod(), footer()
     ]);
